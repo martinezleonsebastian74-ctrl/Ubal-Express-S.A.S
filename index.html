@@ -2261,12 +2261,115 @@ ${p<100?`
 
 `}
 
-`;
+initTrackingMap(order);
 
 saveUserData();
 
 }
 
+/* ================= MAPA REAL (GOOGLE MAPS) ================= */
+
+let googleMapsReady=false;
+let trackingMap=null;
+let trackingTruckMarker=null;
+let trackingRoutePath=null;
+
+/* Esta función la invoca automáticamente el script de Google al terminar de cargar */
+function initGoogleMapsAPI(){
+googleMapsReady=true;
+const order=PEDIDOS.find(o=>o.id===currentOrder);
+if(order && !document.getElementById("trackingView").classList.contains("hidden")){
+initTrackingMap(order);
+}
+}
+
+function initTrackingMap(order){
+const canvas=document.getElementById("trackingMapCanvas");
+if(!canvas)return;
+
+if(!googleMapsReady||typeof google==="undefined"||!google.maps){
+canvas.innerHTML='<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#68736d;font-size:13px">Cargando mapa…</div>';
+setTimeout(function(){
+if(document.getElementById("trackingMapCanvas"))initTrackingMap(order);
+},700);
+return;
+}
+
+const origin=MUNICIPIO_COORDS[order.origin]||MUNICIPIO_COORDS["Bogotá D.C."];
+const destination=MUNICIPIO_COORDS[order.destination]||MUNICIPIO_COORDS["Bogotá D.C."];
+
+trackingMap=new google.maps.Map(canvas,{
+center:origin,
+zoom:10,
+disableDefaultUI:true,
+zoomControl:true,
+gestureHandling:"greedy"
+});
+
+const bounds=new google.maps.LatLngBounds();
+bounds.extend(origin);
+bounds.extend(destination);
+trackingMap.fitBounds(bounds,40);
+
+new google.maps.Marker({position:origin,map:trackingMap,label:{text:"📍",fontSize:"22px"},title:"Origen: "+order.origin});
+new google.maps.Marker({position:destination,map:trackingMap,label:{text:"🏁",fontSize:"22px"},title:"Destino: "+order.destination});
+
+trackingTruckMarker=null;
+
+trackingRoutePath=[
+new google.maps.LatLng(origin.lat,origin.lng),
+new google.maps.LatLng(destination.lat,destination.lng)
+];
+
+new google.maps.Polyline({
+path:trackingRoutePath,
+map:trackingMap,
+strokeColor:"#1F4D36",
+strokeWeight:4,
+strokeOpacity:0.85
+});
+
+placeTruckOnPath(order.progress||0);
+}
+
+/* Calcula dónde va el camión según el % de avance.
+El día que tengas GPS real, solo cambia el cuerpo de esta función
+para que devuelva la posición que llegue del backend. */
+function placeTruckOnPath(progressPercent){
+if(!trackingRoutePath||!trackingMap)return;
+
+const fraction=Math.max(0,Math.min(progressPercent,100))/100;
+const point=pointAtFraction(trackingRoutePath,fraction);
+
+if(trackingTruckMarker){
+trackingTruckMarker.setPosition(point);
+}else{
+trackingTruckMarker=new google.maps.Marker({position:point,map:trackingMap,label:{text:"🚚",fontSize:"24px"},zIndex:999});
+}
+}
+
+function pointAtFraction(path,fraction){
+if(path.length===1)return path[0];
+
+let totalDistance=0;
+const segmentDistances=path.slice(0,-1).map(function(p,i){
+const d=google.maps.geometry.spherical.computeDistanceBetween(p,path[i+1]);
+totalDistance+=d;
+return d;
+});
+
+let targetDistance=totalDistance*fraction;
+
+for(let i=0;i<segmentDistances.length;i++){
+if(targetDistance<=segmentDistances[i]){
+const segmentFraction=segmentDistances[i]===0?0:targetDistance/segmentDistances[i];
+return google.maps.geometry.spherical.interpolate(path[i],path[i+1],segmentFraction);
+}
+targetDistance-=segmentDistances[i];
+}
+
+return path[path.length-1];
+}
 
 /* SIMULACIÓN DEL AVANCE */
 
