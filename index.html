@@ -1167,7 +1167,21 @@ const MUNICIPIOS={
 "Medina":165,
 "Bogotá D.C.":0
 };
-const MUNICIPIO_PRODUCTOR=Object.keys(MUNICIPIOS).filter(m=>m!=="Bogotá D.C.");
+const MUNICIPIO_PRODUCTOR=Object.keys(MUNICIPIOS).filter(m=>m!=="Bogotá D.C.");/* Coordenadas reales (lat/lng) de cada municipio, usadas por el mapa de seguimiento */
+const MUNICIPIO_COORDS={
+"Ubalá":{lat:4.74389,lng:-73.53472},
+"Gachalá":{lat:4.69306,lng:-73.52000},
+"Gachetá":{lat:4.81756,lng:-73.63603},
+"Gama":{lat:4.76278,lng:-73.61083},
+"Guasca":{lat:4.86583,lng:-73.87722},
+"Guatavita":{lat:4.93444,lng:-73.83444},
+"Junín":{lat:4.79028,lng:-73.81361},
+"La Calera":{lat:4.75306,lng:-73.92000},
+"Fómeque":{lat:4.48472,lng:-73.89361},
+"Medina":{lat:4.50917,lng:-73.34944},
+"Bogotá D.C.":{lat:4.71100,lng:-74.07210}
+};
+   
 
 const ESTADOS=[
 {key:"confirmado",label:"Confirmado",corte:0},
